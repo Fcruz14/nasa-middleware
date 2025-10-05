@@ -2,15 +2,17 @@ import fetch from "node-fetch";
 import mcache from "memory-cache";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
-const MAX_POINTS = 9; // 3x3 grid
-const GRID_STEP = 0.02; // ~0.02° ≈ 2 km
+const MAX_POINTS = 25; // 5x5 grid
+const GRID_STEP = 0.03; // ~3 km por paso (más amplio que antes)
+const NOISE_PERCENT = 1; // ±1% para variar los valores
 
+// Construir coordenadas cercanas
 function buildNearbyCoords(lat, lon, maxPoints = MAX_POINTS, step = GRID_STEP) {
   const centerLat = parseFloat(lat);
   const centerLon = parseFloat(lon);
   const coords = [];
+  const offsets = [-2, -1, 0, 1, 2]; // 5x5 grid
 
-  const offsets = [-1, 0, 1];
   for (let i of offsets) {
     for (let j of offsets) {
       if (coords.length >= maxPoints) break;
@@ -21,12 +23,14 @@ function buildNearbyCoords(lat, lon, maxPoints = MAX_POINTS, step = GRID_STEP) {
   return coords;
 }
 
+// Lista de parámetros NASA POWER
 const parameters = [
   "T2M","T2M_MAX","T2M_MIN",
   "PRECTOT","ALLSKY_SFC_SW_DWN",
   "WS2M","WD2M","RH2M","PS"
 ].join(",");
 
+// Fetch para un punto
 async function fetchPoint(lat, lon, startDate, endDate) {
   const cacheKey = `__nasa_point__${lat}_${lon}_${startDate}_${endDate}`;
   const cached = mcache.get(cacheKey);
@@ -38,14 +42,25 @@ async function fetchPoint(lat, lon, startDate, endDate) {
 
   const data = await response.json();
   const daily = data?.properties?.parameter || {};
+  // Aplicar ruido
+  for (const key of Object.keys(daily)) {
+    for (const date of Object.keys(daily[key])) {
+      let val = Number(daily[key][date]);
+      if (!isNaN(val) && val !== -999) {
+        const factor = 1 + (Math.random() - 0.5) * (NOISE_PERCENT/100);
+        daily[key][date] = parseFloat((val * factor).toFixed(2));
+      }
+    }
+  }
+
   const res = { coordinates: { lat, lon }, daily };
   mcache.put(cacheKey, res, CACHE_TTL_MS);
   return res;
 }
 
+// Calcular promedio de todos los puntos
 function aggregatePointsMean(points) {
   const vars = {};
-
   for (const p of points) {
     for (const v of Object.keys(p.daily)) {
       if (!vars[v]) vars[v] = {};
@@ -69,6 +84,7 @@ function aggregatePointsMean(points) {
   return aggregated;
 }
 
+// Handler principal
 export default async function handler(req, res) {
   const origin = req.headers.origin || "*";
   const allowCredentials = process.env.CORS_ALLOW_CREDENTIALS === "true";
@@ -82,7 +98,6 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin");
   res.setHeader("Access-Control-Max-Age", "86400");
-
   if (req.method === "OPTIONS") return res.status(204).end();
 
   const { lat, lon, start, end, grid } = req.query;
