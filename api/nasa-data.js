@@ -44,39 +44,33 @@ async function fetchPoint(lat, lon, startDate, endDate) {
   return res;
 }
 
-function aggregatePoints(points) {
+function aggregatePointsMean(points) {
   // points: [{ coordinates, daily: { T2M: {YYYYMMDD: val, ...}, ... } }, ...]
-  // Build map: variable -> date -> array(values)
   const vars = {};
   for (const p of points) {
     for (const v of Object.keys(p.daily)) {
       if (!vars[v]) vars[v] = {};
       for (const [date, val] of Object.entries(p.daily[v])) {
         if (!vars[v][date]) vars[v][date] = [];
-        // only accept numeric
         const n = Number(val);
         if (!Number.isNaN(n)) vars[v][date].push(n);
       }
     }
   }
 
-  // compute aggregates
+  // Calcular solo la media
   const aggregated = {};
   for (const [v, dates] of Object.entries(vars)) {
     aggregated[v] = {};
     for (const [date, arr] of Object.entries(dates)) {
       if (arr.length === 0) continue;
-      const sum = arr.reduce((a,b) => a+b, 0);
-      const mean = sum / arr.length;
-      const sq = arr.reduce((a,b) => a + Math.pow(b - mean, 2), 0);
-      const std = Math.sqrt(sq / arr.length);
-      const min = Math.min(...arr);
-      const max = Math.max(...arr);
-      aggregated[v][date] = { mean, std, min, max, count: arr.length, samples: arr };
+      const mean = arr.reduce((a,b) => a+b, 0) / arr.length;
+      aggregated[v][date] = parseFloat(mean.toFixed(2)); // redondeo opcional
     }
   }
   return aggregated;
 }
+
 
 // handler
 export default async function handler(req, res) {
@@ -127,18 +121,21 @@ export default async function handler(req, res) {
       return res.status(502).json({ code: 502, description: "Todas las consultas a NASA POWER fallaron", data: results });
     }
 
-    const aggregated = aggregatePoints(success);
+    const aggregated = aggregatePointsMean(success);
 
     const payload = {
-      code: 200,
-      description: "Exitoso - agregado de puntos cercanos",
-      data: {
-        center: { lat, lon },
-        sampledPoints: success.map(s => s.coordinates),
+    code: 200,
+    description: "Exitoso - media de puntos cercanos",
+    data: {
+        coordinates: { lat, lon },
         range: { start: startDate, end: endDate },
-        aggregated
-      }
+        parameters: Object.keys(aggregated).map(v => ({
+        variable: v,
+        values: aggregated[v]
+        }))
+    }
     };
+
 
     mcache.put(cacheKey, payload, CACHE_TTL_MS);
     return res.status(200).json(payload);
