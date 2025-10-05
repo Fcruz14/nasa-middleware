@@ -1,17 +1,20 @@
 {
   "name": "nasa-middleware",
   "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
+  "description": "API serverless para consultar datos NASA POWER con cache",
   "author": "Fcruz14",
+  "license": "ISC",
   "type": "module",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "vercel dev",
+    "test": "echo \"Sin pruebas definidas\" && exit 0"
   },
   "dependencies": {
     "compression": "^1.8.1",
     "memory-cache": "^0.2.0",
     "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

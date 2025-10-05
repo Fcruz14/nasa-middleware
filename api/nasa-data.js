@@ -9,7 +9,7 @@ const cache = (durationSec) => (req, res, next) => {
   const key = "__nasa__" + req.url;
   const cached = mcache.get(key);
   if (cached) {
-    console.log("⚡ Respuesta desde caché:", req.url);
+    console.log("Respuesta desde caché:", req.url);
     res.setHeader("Content-Type", "application/json");
     return res.status(200).send(cached);
   }
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
 
     const raw = await response.text();
     if (!response.ok) {
-      console.error("❌ Error NASA POWER:", response.status, raw);
+      console.error("Error NASA POWER:", response.status, raw);
       return res.status(response.status).json({
         code: response.status,
         description: `Fallo NASA POWER (${response.statusText})`,
@@ -75,12 +75,12 @@ export default async function handler(req, res) {
     res.setHeader("Content-Type", "application/json");
     return res.status(200).json({
       code: 200,
-      description: "Exitoso (cacheado si repites coordenadas)",
+      description: "Exitoso",
       data: { coordinates: { lat, lon }, range: { start, end }, parameters: result },
     });
 
   } catch (err) {
-    console.error("💥 Error interno:", err.message);
+    console.error("Error interno:", err.message);
     return res.status(500).json({
       code: 500,
       description: "Error interno del servidor",
