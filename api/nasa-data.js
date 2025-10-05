@@ -4,16 +4,16 @@ import mcache from "memory-cache";
 
 const compressionMiddleware = compression();
 
-// Cache manual (10 min)
 const cache = (durationSec) => (req, res, next) => {
   const key = "__nasa__" + req.url;
   const cached = mcache.get(key);
   if (cached) {
-    console.log("Respuesta desde caché:", req.url);
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     res.setHeader("Content-Type", "application/json");
     return res.status(200).send(cached);
   }
-
   res.sendResponse = res.send;
   res.send = (body) => {
     mcache.put(key, body, durationSec * 1000);
@@ -22,13 +22,17 @@ const cache = (durationSec) => (req, res, next) => {
   next();
 };
 
-// Adaptador para middlewares en Vercel
 const runMiddleware = (req, res, fn) =>
   new Promise((resolve, reject) => {
     fn(req, res, (result) => (result instanceof Error ? reject(result) : resolve(result)));
   });
 
 export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.status(200).end();
+
   await runMiddleware(req, res, compressionMiddleware);
   await runMiddleware(req, res, cache(600));
 
@@ -51,13 +55,10 @@ export default async function handler(req, res) {
 
     const url = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=${parameters}&start=${start}&end=${end}&latitude=${lat}&longitude=${lon}&format=JSON&community=AG`;
 
-    console.time("NASA_FETCH");
     const response = await fetch(url, { headers: { "Connection": "keep-alive" } });
-    console.timeEnd("NASA_FETCH");
-
     const raw = await response.text();
+
     if (!response.ok) {
-      console.error("Error NASA POWER:", response.status, raw);
       return res.status(response.status).json({
         code: response.status,
         description: `Fallo NASA POWER (${response.statusText})`,
@@ -78,9 +79,7 @@ export default async function handler(req, res) {
       description: "Exitoso",
       data: { coordinates: { lat, lon }, range: { start, end }, parameters: result },
     });
-
   } catch (err) {
-    console.error("Error interno:", err.message);
     return res.status(500).json({
       code: 500,
       description: "Error interno del servidor",
