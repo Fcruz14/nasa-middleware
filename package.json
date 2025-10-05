@@ -1,0 +1,19 @@
+{
+  "name": "nasa-middleware",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "Fcruz14",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "memory-cache": "^0.2.0",
+    "node-fetch": "^3.3.2"
+  }
+}
