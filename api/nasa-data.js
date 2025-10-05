@@ -7,6 +7,7 @@ export default async function handler(req, res) {
   const origin = req.headers.origin || "*";
   const allowCredentials = process.env.CORS_ALLOW_CREDENTIALS === "true";
 
+  
   if (allowCredentials) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Credentials", "true");
