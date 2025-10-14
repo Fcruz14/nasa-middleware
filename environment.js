@@ -1,0 +1,1 @@
+export const WAQI_TOKEN = "6db8353e8e1a074e990dc07c3c98dc1e3394a5c8"

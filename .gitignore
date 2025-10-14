@@ -1,2 +1,3 @@
 /node_modules
 .vercel
+#environment.js #pipipi si no lo exporto no pasa al servidor
