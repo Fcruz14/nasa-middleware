@@ -33,8 +33,7 @@ async function fetchPoint(lat, lon, startDate, endDate) {
   const cached = mcache.get(cacheKey);
   if (cached) return cached;
 
-  const url = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=${parameters}&start=${startDate}&end=${endDate}&latitude=${lat}&longitude=${lon}&format=JSON&community=AG`;
-  const response = await fetch(url, { headers: { Connection: "keep-alive" } });
+const url = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=${parameters}&start=${startDate}&end=${endDate}&latitude=${lat}&longitude=${lon}&format=JSON`;  const response = await fetch(url, { headers: { Connection: "keep-alive" } });
   if (!response.ok) throw new Error(`NASA POWER ${response.status} ${response.statusText}`);
 
   const data = await response.json();
