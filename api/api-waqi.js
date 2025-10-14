@@ -1,8 +1,8 @@
 import fetch from "node-fetch";
 import mcache from "memory-cache";
-import { WAQI_TOKEN } from "../environment";
 
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 min
+const WAQI_TOKEN = "6db8353e8e1a074e990dc07c3c98dc1e3394a5c8";
 
 function getAQIInfo(aqi) {
   if (aqi <= 50) return { level: "Good", color: "green" };
